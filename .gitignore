@@ -1,3 +1,6 @@
 /pad/
 *.jpg
 *.pth
+*.png
+*.jpeg
+pytorch_model.bin
