@@ -1,4 +1,4 @@
-
+s -1 | wc -l.
 import numpy as np
 import torch
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
