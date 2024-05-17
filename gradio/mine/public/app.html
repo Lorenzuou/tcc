@@ -158,7 +158,8 @@
             images_ready.push(dataUrl);
         });
 
-        document.getElementById('downloadImages').addEventListener('click', function() {
+
+        function zipAndDownload(){
             
             // Create a new zip file
             var zip = new JSZip();
@@ -178,7 +179,9 @@
             .then(function(content) {
                 saveAs(content, "images.zip");
             });
-        });
+        }
+
+        document.getElementById('downloadImages').addEventListener('click',zipAndDownload);
 
    
 
@@ -220,7 +223,7 @@
                 }
             }
 
-            function ferramentaMaoLivre(canvas_seg,ctx,ctxSeg) {
+        function ferramentaMaoLivre(canvas_seg,ctx,ctxSeg) {
                 let initPos;
 
                 const mouseMoveHandler = function(e) {
@@ -374,6 +377,8 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 //alert segmentation is over 
                 alert('Segmentation is over');
+                zipAndDownload();
+
                 //reset page 
                 location.reload();
 
