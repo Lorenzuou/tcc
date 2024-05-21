@@ -62,6 +62,32 @@
         font-size: 16px;
     }
 
+    .colorButtonSelection {
+            margin: 10px;
+            padding: 10px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s;
+            box-sizing: border-box; /* Add this line to include the border in the button's total width and height */
+        }
+
+    .colorButtonSelection:active {
+        transform: scale(0.9);
+    }
+
+    #redButton {
+        background-color: red;
+    }
+
+    #blueButton {
+        background-color: blue;
+    }
+
+    .colorSelection {
+        display: flex;
+        align-items: center;
+    }
 
     
 
@@ -121,8 +147,8 @@
 </head>
 <body>
     <div display="flex" justify-content="center" align-items="center">
-        <h1>Ferramenta de segmentação de imagens</h1>
-        <h2>Selecione uma ou mais imagens para segmentar</h2>
+        <h1>Ferramenta de segmentação de imagens automática</h1>
+        <h2>Selecione uma ou mais imagens para segmentar, use os pontos para indicar onde está o que deve ser segmentado</h2>
         <div style="display: flex;">
             <div>
                 <input type="file" id="imageLoader" name="imageLoader" multiple style="display: none;"/>
@@ -151,27 +177,109 @@
                     </div>
              
 
+                    <div class="col">
+                        <button class="col button button-save" id="downloadImages">Baixar Imagens</button> 
+                    </div>
 
                 </div>
+               
                 
             </div>
-            <div>
-                <div class="row">   
-                <button class="col button" id="generateButton">Generate</button>
-                <button class="col button" id="resetButton">Reset</button>
-                <button class="col button" id="pushButton">Próxima</button>
-                <button class="col button button-save" id="downloadImages">Baixar Imagens</button> 
-                </div>
-            </div>  
+           
+           
             
         </div>
+        <div id="selection_buttons" class="row" >
+            <div class="col">
+            <h4>Selecione a cor que representa a máscara</h4>
 
+                <div class="colorSelection">
+                    <button id="blueButton" class="colorButtonSelection"></button>
+                    <span>Faz parte da máscara</span> 
+                </div>
+                <div class="colorSelection">
+                <button id="redButton" class="colorButtonSelection"></button>
+                <span>Não faz parte da máscara</span> 
+                </div>
+            </div>
+
+
+            <div class="col">
+                <div class="row">   
+                <button class="col button" id="generateButton">Gerar máscara</button>
+                <button class="col button" id="resetButton">Reset</button>
+                <button class="col button" id="pushButton">Próxima</button>
+                </div>
+            </div>  
+        </div>
+
+
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+
+        <script> 
+            
+            // Create a new zip file
+            var zip = new JSZip();
+
+            document.getElementById('pushButton').addEventListener('click', function() {
+                var canvas = document.getElementById('img_res'); 
+                var dataUrl = canvas.toDataURL();
+                images_ready.push(dataUrl);
+            });
+
+
+            function zipAndDownload(){
+                
+                // Create a new zip file
+                var zip = new JSZip();
+
+                // Add images to the zip file
+                images_ready.forEach((image, index) => {
+                    // Convert the image data to a Blob
+                    var imgData = image.replace(/^data:image\/(png|jpg);base64,/, "");
+                    var imgBlob = b64toBlob(imgData, 'image/png');
+
+                    // Add the image Blob to the zip file
+                    zip.file(`image${index}.png`, imgBlob, {base64: true});
+                });
+
+                // Generate the zip file and trigger the download
+                zip.generateAsync({type:"blob"})
+                .then(function(content) {
+                    saveAs(content, "images.zip");
+                });
+            }
+
+            document.getElementById('downloadImages').addEventListener('click',zipAndDownload);
+
+    
+
+            // Function to convert base64 data to a Blob
+            function b64toBlob(b64Data, contentType='', sliceSize=512) {
+                const byteCharacters = atob(b64Data);
+                const byteArrays = [];
+
+                for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                    const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+                    const byteNumbers = new Array(slice.length);
+                    for (let i = 0; i < slice.length; i++) {
+                        byteNumbers[i] = slice.charCodeAt(i);
+                    }
+
+                    const byteArray = new Uint8Array(byteNumbers);
+                    byteArrays.push(byteArray);
+                }
+
+                const blob = new Blob(byteArrays, {type: contentType});
+                return blob;
+            }
+        </script>
+      
         <script>
-             document.getElementById('pushButton').addEventListener('click', function() {
-            var canvas = document.getElementById('img_res'); 
-            var dataUrl = canvas.toDataURL();
-            images_ready.push(dataUrl);
-        });
+           
 
         var canvas = document.getElementById('img_seg');
         var canvasSeg = document.getElementById('img_res');
@@ -192,26 +300,29 @@
         var inputPoints = [];
 
 
+         // Initialize the label with a default value
+        var label = 0;
+
+
+        
+
         // Add an event listener to the canvas
         document.getElementById('img_seg').addEventListener('click', function(event) {
-            // Prompt the user for a label
-            var label = prompt("Please enter a label for this point");
             if (label != null) {
                 // Add the label to the inputLabels array
                 inputLabels.push(label);
                 // Add the point to the inputPoints array
                 inputPoints.push([event.clientX, event.clientY]);
 
-                //draw a circle on the canvas to show the point
+                // Draw a circle on the canvas to show the point
                 let canvas = document.getElementById('img_seg');
                 let x = event.clientX - canvas.offsetLeft;
                 let y = event.clientY - canvas.offsetTop;
                 let ctx = canvas.getContext('2d');
                 ctx.beginPath();
                 ctx.arc(x, y, 5, 0, 2 * Math.PI);
-                ctx.fillStyle = 'red';
+                ctx.fillStyle = label === 0 ? 'red' : 'blue';
                 ctx.fill();
-
             }
         });
 
@@ -264,8 +375,8 @@
 
             // Hide the loading animation
             document.getElementById('loading').style.display = 'none';
+            });
         });
-    });
               
 
         
@@ -288,7 +399,7 @@
 
             function loadImage() {
                 img.onload = function() {
-                    var maxWidth = 300; // Max width for the image
+                    var maxWidth = 500; // Max width for the image
                     var ratio = 0;  // Used for aspect ratio
 
                     // Check if the current width is larger than the max
@@ -316,6 +427,86 @@
 
         document.getElementById('imageLoader').addEventListener('change', handleImage, false);
 
+
+        document.getElementById('pushButton').addEventListener('click', function() {
+            var canvas = document.getElementById('img_res'); 
+            var dataUrl = canvas.toDataURL();
+            images_ready.push(dataUrl);
+
+            var data = {
+                imageWidth: img.width,
+                imageHeight: img.height,
+                rectangles: rectangles
+            };
+            rectangles = [];
+            data_array.push(data);
+            currentImageIndex++;
+            if (currentImageIndex < images.length) {
+                loadImage();
+            }else{
+                //erase the canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                //alert segmentation is over 
+                alert('Segmentation is over');
+                zipAndDownload();
+
+                //reset page 
+                location.reload();
+
+            }
+        });
+
+
+        function updateSelectedButton(button) {
+            // Remove the border from the previously selected button
+            if (selectedButton) {
+                selectedButton.style.border = 'none';
+            }
+
+            // Add a border to the newly selected button
+            button.style.border = '3px solid green';
+
+            // Update the selected button
+            selectedButton = button;
+        }
+
+        // Initialize the selected button
+        var selectedButton = null;
+
+        // Add event listeners to the buttons
+        document.getElementById('redButton').addEventListener('click', function() {
+            label = 0;
+            updateSelectedButton(this);
+        });
+        document.getElementById('blueButton').addEventListener('click', function() {
+            label = 1;
+            updateSelectedButton(this);
+        });
+
+
+
+
+        //activate blue button
+        document.getElementById('blueButton').click();
+
+        // Add an event listener to the reset button
+        document.getElementById('resetButton').addEventListener('click', function() {
+            // Clear the inputLabels and inputPoints arrays
+            inputLabels = [];
+            inputPoints = [];
+
+            // Clear the canvas
+            let canvas = document.getElementById('img_seg');
+            let ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Reset the selected button
+            if (selectedButton) {
+                selectedButton.style.border = 'none';
+                selectedButton = null;
+            }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        });
         </script>
 
     </div>

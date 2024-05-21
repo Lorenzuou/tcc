@@ -42,9 +42,9 @@ def apply_mask(image, mask, color=None):
         mask_rgb[mask > 0] = color
 
     # Overlay the mask and image
-    overlay_image = cv2.addWeighted(image, 0.7, mask_rgb, 0.3, 0)
+    # overlay_image = cv2.addWeighted(image, 0.7, mask_rgb, 0.3, 0)
 
-    return overlay_image
+    return mask_rgb
 
 
 # def generate_image_of_mask(output_mask, shape):
@@ -74,10 +74,6 @@ def generate_image_with_prompt(image, input_labels, input_points):
     # input_labels = input_labels.split(',') if input_labels else []
     # input_points = input_points.split(',') if input_points else []
     predictor.set_image(image)
-    print(input_labels)
-    print(input_points)
-    print(np.array(input_labels, dtype=np.float32))
-    print(np.array(input_points, dtype=np.float32))
     input_points = np.array(input_points, dtype=np.float32)
     input_labels = np.array(input_labels, dtype=np.float32)
     # exit()
@@ -94,11 +90,16 @@ def generate_image_with_prompt(image, input_labels, input_points):
     for i in range(len(output_mask)):
         mask = output_mask[i]
         mask = np.where(mask, 255, 0).astype('uint8')
-        color = np.random.randint(0, 255, 3)
+    
+        color = (255, 255, 255)
         image = apply_mask(image_rgb, mask, color=color)
-        image_rgb = cv2.addWeighted(image_rgb, 1, image, 1, 0)
 
-    return image_rgb
+        #invert black and white
+    # image = cv2.bitwise_not(image)
+    # image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+
+    return image
 
                             
 
@@ -118,6 +119,10 @@ def predict_prompt():
     input_points = data['input_points']
 
     image_masked = generate_image_with_prompt(image_cv2, input_labels, input_points)
+
+
+    # turn black to white and white to black 
+    image_masked = cv2.bitwise_not(image_masked)
 
     image_masked = Image.fromarray(image_masked)
 
