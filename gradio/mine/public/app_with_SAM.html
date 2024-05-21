@@ -219,15 +219,12 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
 
         <script> 
-            
+
+            var fileNames = [];
+
+                        
             // Create a new zip file
             var zip = new JSZip();
-
-            document.getElementById('pushButton').addEventListener('click', function() {
-                var canvas = document.getElementById('img_res'); 
-                var dataUrl = canvas.toDataURL();
-                images_ready.push(dataUrl);
-            });
 
 
             function zipAndDownload(){
@@ -235,14 +232,27 @@
                 // Create a new zip file
                 var zip = new JSZip();
 
+                if (images_ready.length === 0) {
+                    alert('Nenhuma imagem foi segmentada ainda');
+                    return;
+                }
+
                 // Add images to the zip file
                 images_ready.forEach((image, index) => {
                     // Convert the image data to a Blob
                     var imgData = image.replace(/^data:image\/(png|jpg);base64,/, "");
                     var imgBlob = b64toBlob(imgData, 'image/png');
 
+                    let image_name = fileNames[index];
+
+                    //remove extension if not png and add png
+                    if (!image_name.endsWith('.png')) {
+                        image_name = image_name.split('.').slice(0, -1).join('.') + '.png';
+                    }
+
+
                     // Add the image Blob to the zip file
-                    zip.file(`image${index}.png`, imgBlob, {base64: true});
+                    zip.file(image_name, imgBlob, {base64: true});
                 });
 
                 // Generate the zip file and trigger the download
@@ -293,6 +303,7 @@
         var images = [];
         var currentImageIndex = 0;
         var images_ready = [];
+        var images_names = [];
 
         var data_array = [];
 
@@ -302,6 +313,7 @@
 
          // Initialize the label with a default value
         var label = 0;
+
 
 
         
@@ -382,6 +394,10 @@
         
 
         function handleImage(e) {
+            
+            fileNames = Array.from(this.files).map(function(file) {
+                return file.name;
+            });
             var files = e.target.files;
             for (var i = 0; i < files.length; i++) {
                 var reader = new FileReader();
@@ -432,6 +448,7 @@
             var canvas = document.getElementById('img_res'); 
             var dataUrl = canvas.toDataURL();
             images_ready.push(dataUrl);
+            console.log(dataUrl);
 
             var data = {
                 imageWidth: img.width,

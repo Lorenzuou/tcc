@@ -150,6 +150,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
 
     <script> 
+        var fileNames = [];
+
         
         // Create a new zip file
         var zip = new JSZip();
@@ -162,26 +164,39 @@
 
 
         function zipAndDownload(){
-            
-            // Create a new zip file
-            var zip = new JSZip();
+                
+                // Create a new zip file
+                var zip = new JSZip();
 
-            // Add images to the zip file
-            images_ready.forEach((image, index) => {
-                // Convert the image data to a Blob
-                var imgData = image.replace(/^data:image\/(png|jpg);base64,/, "");
-                var imgBlob = b64toBlob(imgData, 'image/png');
+                if (images_ready.length === 0) {
+                    alert('Nenhuma imagem foi segmentada ainda');
+                    return;
+                }
 
-                // Add the image Blob to the zip file
-                zip.file(`image${index}.png`, imgBlob, {base64: true});
-            });
+                // Add images to the zip file
+                images_ready.forEach((image, index) => {
+                    // Convert the image data to a Blob
+                    var imgData = image.replace(/^data:image\/(png|jpg);base64,/, "");
+                    var imgBlob = b64toBlob(imgData, 'image/png');
 
-            // Generate the zip file and trigger the download
-            zip.generateAsync({type:"blob"})
-            .then(function(content) {
-                saveAs(content, "images.zip");
-            });
-        }
+                    let image_name = fileNames[index];
+
+                    //remove extension if not png and add png
+                    if (!image_name.endsWith('.png')) {
+                        image_name = image_name.split('.').slice(0, -1).join('.') + '.png';
+                    }
+                    
+
+                    // Add the image Blob to the zip file
+                    zip.file(image_name, imgBlob, {base64: true});
+                });
+
+                // Generate the zip file and trigger the download
+                zip.generateAsync({type:"blob"})
+                .then(function(content) {
+                    saveAs(content, "images.zip");
+                });
+            }
 
         document.getElementById('downloadImages').addEventListener('click',zipAndDownload);
 
@@ -293,7 +308,11 @@
         
 
         function handleImage(e) {
+            fileNames = Array.from(this.files).map(function(file) {
+                return file.name;
+            });
             var files = e.target.files;
+           
             for (var i = 0; i < files.length; i++) {
                 var reader = new FileReader();
                 reader.onload = (function(file) {
